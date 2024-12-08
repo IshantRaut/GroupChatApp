@@ -7,4 +7,5 @@ router.get('/members', authentication.authenticateUserGroup, groupController.get
 router.get('/chats', authentication.authenticateUserGroup, groupController.getGroupChats);
 router.post('/addChat', authentication.authenticateUserGroup, groupController.postaddChat);
 router.post('/generateRequest', authentication.authenticateUserGroup, requestController.postGenerateRequest);
+router.delete('/leaveGroup', authentication.authenticateUserGroup, groupController.deleteLeaveGroup);
 module.exports = router;

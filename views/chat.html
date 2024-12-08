@@ -56,6 +56,7 @@
     <button class="btn btn-sm btn-success m-1" id="sendRequestBtn">Send Request >></button>
     <button class="btn btn-sm btn-success m-1" id="receivedRequestsBtn">Show received requests</button>
     <button class="btn btn-sm btn-success m-1" id="showRequestHistoryBtn">Request History</button>
+    <button class="btn btn-sm btn-danger m-1" id="leaveGroupBtn">Leave Group</button>
   </div>
 
   <!-- Received Requests -->
@@ -123,8 +124,8 @@
         <table class="table table-sm table-success table-striped">
           <thead>
             <tr>
-              <th scope="col">Email</th>
               <th scope="col">Username</th>
+              <th scope="col">Email</th>
               <th scope="col">Group</th>
               <th scope="col">Status</th>
               <th scope="col">Date</th>
@@ -133,8 +134,8 @@
           </thead>
           <tbody id="receivedRequestsTableBody">
             <!-- <tr>
-              <td>abc@xyz.com</td>
               <td>abc</td>
+              <td>abc@xyz.com</td>
               <td>friends</td>
               <td>accepted</td>
               <td>2023-04-04</td>

@@ -1,6 +1,7 @@
 const path = require('path');
 const User = require('../models/user'); 
 const Group = require('../models/group');
+const Admin = require('../models/admin');
 
 
 exports.getUserGroups = async (req, res) => {
@@ -31,6 +32,11 @@ exports.postCreateGroup = async (req, res) => {
 
 
         await user.addGroup(group); //update the junction table
+        await Admin.create({
+            userId: user.id,
+            groupId: group.id
+        });
+
         res.status(201).json(group);
     }catch(err){
         console.log('POST CREATE GROUP ERROR');

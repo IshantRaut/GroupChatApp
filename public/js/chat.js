@@ -6,6 +6,7 @@ const token = localStorage.getItem('token');
 const decodedToken = parseJwt(token);
 const USERNAME = decodedToken.username;
 const USER_ID = decodedToken.userId;
+const EMAIL = decodedToken.email;
 
 // Navbar
 const usernameNav = document.getElementById('usernameNav');
@@ -20,6 +21,7 @@ const createGroupSubmitBtn = document.getElementById('createGroupSubmitBtn');
 const closeCreateGroupFormBtn = document.getElementById('closeCreateGroupFormBtn');
 const createGroupContainer = document.getElementById('createGroupContainer');
 const groupsContainer = document.getElementById('groupsContainer');
+const leaveGroupBtn = document.getElementById('leaveGroupBtn');
 // Group members
 const groupMembersContainer = document.getElementById('groupMembersContainer');
 const groupMembersOuterContainer = document.getElementById('groupMembersOuterContainer');
@@ -51,9 +53,43 @@ function showUserInfoInDOM(){
 }
 
 //group members
-function addGroupMemberInDOM(member){
+function deleteGroupMember(memberEmail, memberDiv){
+    axios.delete(`${ORIGIN}/group/admin/removeGroupMember?groupId=${CURRENT_GROUP_ID}&email=${memberEmail}`, 
+    { headers: {Authorization: token} })
+    .then((res) => {
+        const msg = res.data.msg;
+        showSuccessInDOM(msg, 5000);
+        groupMembersContainer.removeChild(memberDiv);
+    })
+    .catch((err) => {
+        let msg = "Could not delete group member :(";
+        if(err.response && err.response.data && err.response.data.msg){
+            msg = err.response.data.msg;
+        }
+        showErrorInDOM(msg);
+    });
+}
+
+function addGroupMemberInDOM(member, admin){
     const div = document.createElement('div');
-    div.innerText = member.username;
+    div.className = 'p-1';
+
+    if(member.email === admin.email){
+        div.innerText = member.username + ' : Admin';
+    }else{
+        div.innerText = member.username;
+    }
+
+    if(EMAIL === admin.email && EMAIL !== member.email){
+        const removeMemberBtn = document.createElement('button');
+        removeMemberBtn.innerText = 'Remove';
+        removeMemberBtn.className = 'btn btn-sm btn-danger ms-2';
+
+        div.appendChild(removeMemberBtn);
+
+        removeMemberBtn.addEventListener('click', () => deleteGroupMember(member.email, div));
+    }
+
     groupMembersContainer.appendChild(div);
 }
 
@@ -65,11 +101,11 @@ function getGroupMembers(){
 
     axios.get(`${ORIGIN}/group/members?groupId=${CURRENT_GROUP_ID}`, { headers: {Authorization: token} })
     .then((res) => {
-        groupMembersOuterContainer.style.display = 'block';
-        const members = res.data;
+        const members = res.data.members;
+        const admin = res.data.admin.user;
         groupMembersOuterContainer.style.display = 'block';
         groupMembersContainer.innerText = '';
-        members.forEach((member) => addGroupMemberInDOM(member));
+        members.forEach((member) => addGroupMemberInDOM(member, admin));
     })
     .catch((err) => {
         let msg = "Could not fetch group members :(";
@@ -88,6 +124,7 @@ function addGroupInDOM(group){
     groupBtn.className = 'btn btn-sm btn-outline-primary me-1';
 
     groupBtn.addEventListener('click', (e) => {
+        groupMembersOuterContainer.style.display = 'none'
         const groupBtnClicked = e.target;
         CURRENT_GROUP_ID = groupBtnClicked.id;
         const groupBtns = groupsContainer.children;
@@ -142,6 +179,26 @@ function createGroup(e){
     })
     .catch((err) => {
         let msg = "Could not create group :(";
+        if(err.response && err.response.data && err.response.data.msg){
+            msg = err.response.data.msg;
+        }
+        showErrorInDOM(msg);
+    });
+}
+
+function leaveGroup(){
+    if(!CURRENT_GROUP_ID){
+        showErrorInDOM('Please select a group!');
+        return;
+    }
+
+    axios.delete(`${ORIGIN}/group/leaveGroup?groupId=${CURRENT_GROUP_ID}`, { headers: {Authorization: token} })
+    .then((res) => {
+        const msg = res.data.msg;
+        showSuccessInDOM(msg, 5000);
+    })
+    .catch((err) => {
+        let msg = "Could not leave group :(";
         if(err.response && err.response.data && err.response.data.msg){
             msg = err.response.data.msg;
         }
@@ -359,26 +416,14 @@ function getPendingRequests(){
 function addReceivedRequestHistoryInDOM(request){
     const tr = document.createElement('tr');
 
-    const tdEmail = document.createElement('td');
-    const tdUsername = document.createElement('td');
-    const tdGroup = document.createElement('td');
-    const tdStatus = document.createElement('td');
-    const tdDate = document.createElement('td');
-    const tdTime = document.createElement('td');
-
-    tdEmail.innerText = request.user.email;
-    tdUsername.innerText = request.user.username;
-    tdGroup.innerText = request.group.groupName;
-    tdStatus.innerText = request.status;
-    tdDate.innerText =  convertToDate(request.createdAt);
-    tdTime.innerText = convertToTime(request.createdAt);
-
-    tr.appendChild(tdEmail);
-    tr.appendChild(tdUsername);
-    tr.appendChild(tdGroup);
-    tr.appendChild(tdStatus);
-    tr.appendChild(tdDate);
-    tr.appendChild(tdTime);
+    tr.innerHTML = `
+        <td>${request.user.username}</td>
+        <td>${request.user.email}</td>
+        <td>${request.group.groupName}</td>
+        <td>${request.status}</td>
+        <td>${convertToDate(request.createdAt)}</td>
+        <td>${convertToTime(request.createdAt)}</td>
+    `;
 
     receivedRequestsTableBody.appendChild(tr);
 }
@@ -386,23 +431,13 @@ function addReceivedRequestHistoryInDOM(request){
 function addSentRequestHistoryInDOM(request){
     const tr = document.createElement('tr');
 
-    const tdEmail = document.createElement('td');
-    const tdGroup = document.createElement('td');
-    const tdStatus = document.createElement('td');
-    const tdDate = document.createElement('td');
-    const tdTime = document.createElement('td');
-
-    tdEmail.innerText = request.email;
-    tdGroup.innerText = request.group.groupName;
-    tdStatus.innerText = request.status;
-    tdDate.innerText =  convertToDate(request.createdAt);
-    tdTime.innerText = convertToTime(request.createdAt);
-
-    tr.appendChild(tdEmail);
-    tr.appendChild(tdGroup);
-    tr.appendChild(tdStatus);
-    tr.appendChild(tdDate);
-    tr.appendChild(tdTime);
+    tr.innerHTML = `
+        <td>${request.email}</td>
+        <td>${request.group.groupName}</td>
+        <td>${request.status}</td>
+        <td>${convertToDate(request.createdAt)}</td>
+        <td>${convertToTime(request.createdAt)}</td>
+    `;
 
     sentRequestsTableBody.appendChild(tr);
 }
@@ -461,14 +496,14 @@ function parseJwt (token) {
     return JSON.parse(jsonPayload);
 }
 
-function showSuccessInDOM(msg){
+function showSuccessInDOM(msg, time=3000){
     successMsg.innerText = msg;
-    setTimeout(() => successMsg.innerText = '', 3000);
+    setTimeout(() => successMsg.innerText = '', time);
 }
 
-function showErrorInDOM(msg){
+function showErrorInDOM(msg, time=3000){
     errorMsg.innerText = msg;
-    setTimeout(() => errorMsg.innerText = '', 3000);
+    setTimeout(() => errorMsg.innerText = '', time);
 }
 
 function showErrorInInputFieldInDOM(inputField){
@@ -488,6 +523,7 @@ window.addEventListener('DOMContentLoaded', () => {
     createGroupBtn.addEventListener('click', () => createGroupContainer.style.display = 'block');
     closeCreateGroupFormBtn.addEventListener('click', () => createGroupContainer.style.display = 'none');
     createGroupSubmitBtn.addEventListener('click', createGroup);
+    leaveGroupBtn.addEventListener('click', leaveGroup);
     // Group Members
     showGroupMembersBtn.addEventListener('click', getGroupMembers);
     closeGroupMembersBtn.addEventListener('click', () => groupMembersOuterContainer.style.display = 'none');
