@@ -1,4 +1,4 @@
-const HOST = 'http://' + window.location.host;
+const ORIGIN = window.location.origin;
 const form = document.getElementById('user-form');
 const usernameInput = document.getElementById('username');
 const emailInput = document.getElementById('email');
@@ -10,7 +10,23 @@ const successMsg = document.getElementById('success-msg');
 function addUser(e){
     e.preventDefault();
     if(password1Input.value !== password2Input.value){
-        showErrorInDOM('Passwords must match');
+        showErrorInDOM('Passwords must match!');
+        const oldBorderColor = password1Input.style.borderColor;
+        password1Input.style.borderColor = 'red';
+        password2Input.style.borderColor = 'red';
+        setTimeout(() => {
+            password1Input.style.borderColor = oldBorderColor;
+            password2Input.style.borderColor = oldBorderColor;
+        }, 5000);
+        return;
+    }
+    if(phNumberInput.value.length != 10){
+        showErrorInDOM('Enter a valid phone number!');
+        const oldBorderColor = phNumberInput.style.borderColor;
+        phNumberInput.style.borderColor = 'red';
+        setTimeout(() => {
+            phNumberInput.style.borderColor = oldBorderColor;
+        }, 5000);
         return;
     }
     const user = {
@@ -19,7 +35,7 @@ function addUser(e){
         phNumber: phNumberInput.value,
         password: password1Input.value
     };
-    axios.post(`${HOST}/user/signup`, user)
+    axios.post(`${ORIGIN}/user/signup`, user)
     .then((res) => {
         const msg = res.data.msg;
         showSuccessInDOM(msg);
