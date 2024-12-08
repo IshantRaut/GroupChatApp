@@ -14,7 +14,7 @@ function loginUser(e){
         password: passwordInput.value
     };
 
-    axios.post(`${ORIGIN}/user/login`, user)
+    axios.post(`${ORIGIN}/login`, user)
     .then((res) => {
         localStorage.setItem('token', res.data.token);
         showSuccessInDOM(res.data.msg);

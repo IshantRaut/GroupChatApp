@@ -35,7 +35,7 @@ function addUser(e){
         phNumber: phNumberInput.value,
         password: password1Input.value
     };
-    axios.post(`${ORIGIN}/user/signup`, user)
+    axios.post(`${ORIGIN}/signup`, user)
     .then((res) => {
         const msg = res.data.msg;
         showSuccessInDOM(msg);
