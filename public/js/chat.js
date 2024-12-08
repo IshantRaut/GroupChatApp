@@ -8,10 +8,16 @@ const chatList = document.getElementById('chat-list');
 const messageInput = document.getElementById('message');
 const sendBtn = document.getElementById('send-btn');
 const errorMsg = document.getElementById('err-msg');
+const logoutBtn = document.getElementById('logout-btn');
 function showUserInfoInDOM(){
     usernameNav.innerText = username;
 }
 function addMessage(){
+    if(messageInput.value === ''){
+        showErrorInDOM('Please enter message!');
+        return;
+    }
+
     const chat = {
         userId,
         message: messageInput.value
@@ -19,12 +25,13 @@ function addMessage(){
     axios.post(`${ORIGIN}/chat`, chat)
     .then((res) => {
         const message = res.data.message;
-        const li = document.createElement('li');
-        li.innerText = `${username}: ${message}`;
-        li.id = userId;
-        li.className = 'list-group-item bg-light';
-        li.classList.add('text-success');
-        chatList.appendChild(li);
+        const div = document.createElement('div');
+        const div2 = document.createElement('div');
+        div2.innerText = `${username}: ${message}`;
+        div.className = 'd-flex flex-row-reverse my-1';
+        div2.className = 'rounded bg-success text-light px-2 py-1';
+        div.appendChild(div2);
+        chatList.appendChild(div);
         messageInput.value = '';
     })
     .catch((err) => {
@@ -36,21 +43,32 @@ function showMessages(){
     axios.get(`${ORIGIN}/all-chats`)
     .then((res) => {
         const chats = res.data;
+        chatList.innerText = '';
         chats.forEach((chat) => {
-            const li = document.createElement('li');
-            li.innerText = `${chat.user.username}: ${chat.message}`;
-            li.id = chat.userId;
-            li.className = 'list-group-item bg-light';
+            const div = document.createElement('div');
+            const div2 = document.createElement('div');
+            div2.innerText = `${chat.user.username}: ${chat.message}`;
             if(username === chat.user.username){
-                li.classList.add('text-success');
+                div.className = 'd-flex flex-row-reverse my-1';
+                div2.className = 'rounded bg-success text-light px-2 py-1';
+            }else{
+                div.className = 'd-flex flex-row my-1';
+                div2.className = 'rounded bg-secondary text-light px-2 py-1';
             }
-            chatList.appendChild(li);
+            div.appendChild(div2);
+            chatList.appendChild(div);
         });
     })
     .catch((err) => {
         const msg = err.response.data.msg ? err.response.data.msg : 'Could not fetch chats :(';
         showErrorInDOM(msg);
     });
+}
+function logout(){
+    if(confirm('Are you sure you want to logout ?')){
+        localStorage.removeItem('token');
+        window.location.href = '/';
+    }
 }
 function parseJwt (token) {
     var base64Url = token.split('.')[1];
@@ -71,5 +89,7 @@ function showErrorInDOM(msg){
 
 window.addEventListener('DOMContentLoaded', () => {
     showMessages();
+    setInterval(showMessages, 3000); //get the chats from backend every 3 sec.
     sendBtn.addEventListener('click', addMessage);
+    logoutBtn.addEventListener('click', logout);
 });

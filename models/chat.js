@@ -8,7 +8,7 @@ const Chat = sequelize.define('chats', {
         allowNull: false
     },
     message: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: false
     }
 });
