@@ -86,3 +86,41 @@ exports.postConfirmRequest = async (req, res) => {
         res.status(500).json({ error: err, msg: 'Could not confirm request'});
     }
 }
+exports.getRequestHistory = async (req, res) => {
+    try{
+        const userId = req.user.id;
+        const email = req.user.email;
+        const requests = await Request.findAll({
+            where: { [Op.or]: [
+                { userId }, // requests sent
+                { email } // requests received
+            ]},
+            attributes: ['email', 'status', 'createdAt'],
+            order: [['id', 'DESC']],
+            include: [{
+                model: User,
+                attributes: ['username', 'email']
+            }, {
+                model: Group,
+                attributes: ['id', 'groupName']
+            }]
+        });
+        if(requests.length === 0){
+            res.status(200).json({ msg: 'No requests found' });
+            return;
+        }
+        const receivedRequests = [];
+        const sentRequests = [];
+        requests.forEach((request) => {
+            if(request.email === email){
+                receivedRequests.push(request);
+            }else{
+                sentRequests.push(request);
+            }
+        });
+        res.status(200).json({ receivedRequests, sentRequests });
+    }catch(err){
+        console.log('GET REQUEST HISTORY ERROR');
+        res.status(500).json({ msg: 'Could not fetch group request history' });
+    }
+}

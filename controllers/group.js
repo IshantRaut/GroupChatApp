@@ -14,7 +14,7 @@ exports.getGroupChats = async (req, res) => {
                     { groupId: groupId }
                 ]
             },
-            attributes: ['id', 'message', 'timeStamp'],
+            attributes: ['id', 'message', 'createdAt'],
             include: [{
                 model: User,
                 attributes: ['username']

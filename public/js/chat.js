@@ -20,9 +20,11 @@ const createGroupSubmitBtn = document.getElementById('createGroupSubmitBtn');
 const closeCreateGroupFormBtn = document.getElementById('closeCreateGroupFormBtn');
 const createGroupContainer = document.getElementById('createGroupContainer');
 const groupsContainer = document.getElementById('groupsContainer');
-//group members
+// Group members
 const groupMembersContainer = document.getElementById('groupMembersContainer');
 const groupMembersOuterContainer = document.getElementById('groupMembersOuterContainer');
+const showGroupMembersBtn = document.getElementById('showGroupMembersBtn');
+const closeGroupMembersBtn = document.getElementById('closeGroupMembersBtn');
 // Request
 const receivedRequestsBtn = document.getElementById('receivedRequestsBtn');
 const closeReceivedRequestsBtn = document.getElementById('closeReceivedRequestsBtn');
@@ -33,6 +35,11 @@ const sendRequestSubmitBtn = document.getElementById('sendRequestSubmitBtn');
 const requestEmailInput = document.getElementById('requestEmail');
 const receivedRequestsContainer = document.getElementById('receivedRequestsContainer');
 const receivedRequestsOuterContainer = document.getElementById('receivedRequestsOuterContainer');
+const showRequestHistoryBtn = document.getElementById('showRequestHistoryBtn');
+const closeRequestHistoryBtn = document.getElementById('closeRequestHistoryBtn');
+const requestHistoryContainer = document.getElementById('requestHistoryContainer');
+const receivedRequestsTableBody =  document.getElementById('receivedRequestsTableBody');
+const sentRequestsTableBody = document.getElementById('sentRequestsTableBody');
 // Error/Success/Logout
 const errorMsg = document.getElementById('errMsg');
 const successMsg = document.getElementById('successMsg');
@@ -50,18 +57,27 @@ function addGroupMemberInDOM(member){
     groupMembersContainer.appendChild(div);
 }
 
-function getGroupMembers(groupId){
-    axios.get(`${ORIGIN}/group/members?groupId=${groupId}`, { headers: {Authorization: token} })
+function getGroupMembers(){
+    if(!CURRENT_GROUP_ID){
+        showErrorInDOM('Please select a group!');
+        return;
+    }
+
+    axios.get(`${ORIGIN}/group/members?groupId=${CURRENT_GROUP_ID}`, { headers: {Authorization: token} })
     .then((res) => {
+        groupMembersOuterContainer.style.display = 'block';
         const members = res.data;
         groupMembersOuterContainer.style.display = 'block';
         groupMembersContainer.innerText = '';
         members.forEach((member) => addGroupMemberInDOM(member));
     })
     .catch((err) => {
-        const msg = err.response.data.msg ? err.response.data.msg : "Could not fetch group members :(";
+        let msg = "Could not fetch group members :(";
+        if(err.response && err.response.data && err.response.data.msg){
+            msg = err.response.data.msg;
+        }
         showErrorInDOM(msg);
-    })
+    });
 }
 
 //groups
@@ -69,7 +85,7 @@ function addGroupInDOM(group){
     const groupBtn = document.createElement('button');
     groupBtn.innerText = group.groupName;
     groupBtn.id = group.id;
-    groupBtn.className = 'btn btn-sm btn-outline-secondary me-1';
+    groupBtn.className = 'btn btn-sm btn-outline-primary me-1';
 
     groupBtn.addEventListener('click', (e) => {
         const groupBtnClicked = e.target;
@@ -80,7 +96,6 @@ function addGroupInDOM(group){
         }
         groupBtnClicked.classList.add('active');
 
-        getGroupMembers(groupBtnClicked.id);
         getGroupChats(groupBtnClicked.id);
     });
 
@@ -96,9 +111,12 @@ function getGroups(){
         groups.forEach((group) => addGroupInDOM(group));
     })
     .catch((err) => {
-        const msg = err.response.data.msg ? err.response.data.msg : "Could not fetch user's groups :(";
+        let msg = "Could not fetch user's groups :(";
+        if(err.response && err.response.data && err.response.data.msg){
+            msg = err.response.data.msg;
+        }
         showErrorInDOM(msg);
-    })
+    });
 }
 
 function createGroup(e){
@@ -123,7 +141,10 @@ function createGroup(e){
         createGroupContainer.style.display = 'none';
     })
     .catch((err) => {
-        const msg = err.response.data.msg ? err.response.data.msg : 'Could not create group :(';
+        let msg = "Could not create group :(";
+        if(err.response && err.response.data && err.response.data.msg){
+            msg = err.response.data.msg;
+        }
         showErrorInDOM(msg);
     });
 }
@@ -131,15 +152,14 @@ function createGroup(e){
 //chats
 function addChatInDOM(chat){
     const message = chat.message;
-    const timeStamp = chat.timeStamp;
+    const dateTime = chat.createdAt;
     const username = chat.user.username;
 
     const div = document.createElement('div');
     const div2 = document.createElement('div');
 
     const sub = document.createElement('sub');
-    const HHMMSS = (new Date(timeStamp)).toTimeString().split(' ')[0].split(':');
-    sub.innerText = `${HHMMSS[0]}:${HHMMSS[1]}`;
+    sub.innerText = convertToTime(dateTime, 'HHMM');
     sub.className = 'ms-1';
 
     if(USERNAME === username){
@@ -158,14 +178,37 @@ function addChatInDOM(chat){
 }
 
 function getGroupChats(groupId){
-    axios.get(`${ORIGIN}/group/chats?groupId=${groupId}&lastmsgid=${-1}`, { headers: {Authorization: token} })
+    const storedChatsArr = localStorage.getItem('storedChatsArr') ? JSON.parse(localStorage.getItem('storedChatsArr')) : [];
+    const oldGroupChatsObjArr = storedChatsArr.filter((oldGroupChatObj) => oldGroupChatObj.groupId === groupId);
+    const oldGroupChatsObj =  oldGroupChatsObjArr.length > 0 ? oldGroupChatsObjArr[0] : { groupId , chats: [] };
+    if(oldGroupChatsObjArr.length === 0){
+        storedChatsArr.push(oldGroupChatsObj);
+    }
+    const oldGroupChats = oldGroupChatsObj.chats;
+    const lastMessageId = oldGroupChats.length > 0 ? oldGroupChats[oldGroupChats.length-1].id : -1;
+
+    axios.get(`${ORIGIN}/group/chats?groupId=${groupId}&lastmsgid=${lastMessageId}`, { headers: {Authorization: token} })
     .then((res) => {
-        const chats = res.data;
+        const newGroupChats = res.data;
+
+        const totalGroupChats = [...oldGroupChats, ...newGroupChats];
+        const latestGroupChats = totalGroupChats.length > STORED_CHATS_LENGTH ? 
+            totalGroupChats.slice(totalGroupChats.length - STORED_CHATS_LENGTH) : totalGroupChats;
+        storedChatsArr.forEach((oldGroupChatObj) => {
+            if(oldGroupChatObj.groupId === groupId){
+                oldGroupChatObj.chats = latestGroupChats;
+            }
+        });
+        localStorage.setItem('storedChatsArr', JSON.stringify(storedChatsArr));
+
         chatList.innerText = '';
-        chats.forEach((chat) => addChatInDOM(chat));
+        latestGroupChats.forEach((chat) => addChatInDOM(chat));
     })
     .catch((err) => {
-        const msg = err.response.data.msg ? err.response.data.msg : "Could not fetch group chats :(";
+        let msg = "Could not fetch group chats :(";
+        if(err.response && err.response.data && err.response.data.msg){
+            msg = err.response.data.msg;
+        }
         showErrorInDOM(msg);
     });
 }
@@ -189,13 +232,11 @@ function createChatInGroup(){
     axios.post(`${ORIGIN}/group/addChat?groupId=${CURRENT_GROUP_ID}`, chat, { headers: {Authorization: token} })
     .then((res) => {
         const message = res.data.message;
-        const messageId = res.data.id;
-        const timeStamp = res.data.timeStamp;
+        const timeStamp = res.data.createdAt;
 
         const chat = {
-            id: messageId,
             message,
-            timeStamp,
+            createdAt: timeStamp,
             user: { username: USERNAME }
         };
 
@@ -203,8 +244,11 @@ function createChatInGroup(){
 
         messageInput.value = '';
     })
-    .catch((err) => {console.log(err)
-        const msg = err.response.data.msg ? err.response.data.msg : 'Could not add chat :(';
+    .catch((err) => {
+        let msg = "Could not add chat :(";
+        if(err.response && err.response.data && err.response.data.msg){
+            msg = err.response.data.msg;
+        }
         showErrorInDOM(msg);
     });
 }
@@ -236,7 +280,10 @@ function sendRequest(e){
         sendRequestContainer.style.display = 'none';
     })
     .catch((err) => {
-        const msg = err.response.data.msg ? err.response.data.msg : 'Could not send group request :(';
+        let msg = "Could not send group request :(";
+        if(err.response && err.response.data && err.response.data.msg){
+            msg = err.response.data.msg;
+        }
         showErrorInDOM(msg);
     });
 }
@@ -257,9 +304,12 @@ function confirmRequest(groupId, status, RequestDiv){
         receivedRequestsContainer.removeChild(RequestDiv);
     })
     .catch((err) => {
-        const msg = err.response.data.msg ? err.response.data.msg : "Could not confirm request :(";
+        let msg = "Could not confirm request :(";
+        if(err.response && err.response.data && err.response.data.msg){
+            msg = err.response.data.msg;
+        }
         showErrorInDOM(msg);
-    })
+    });
 }
 
 function addRequestInDOM(request){
@@ -298,12 +348,102 @@ function getPendingRequests(){
         requests.forEach((request) => addRequestInDOM(request));
     })
     .catch((err) => {
-        const msg = err.response.data.msg ? err.response.data.msg : "Could not fetch group requests :(";
+        let msg = "Could not fetch group requests :(";
+        if(err.response && err.response.data && err.response.data.msg){
+            msg = err.response.data.msg;
+        }
         showErrorInDOM(msg);
+    });
+}
+
+function addReceivedRequestHistoryInDOM(request){
+    const tr = document.createElement('tr');
+
+    const tdEmail = document.createElement('td');
+    const tdUsername = document.createElement('td');
+    const tdGroup = document.createElement('td');
+    const tdStatus = document.createElement('td');
+    const tdDate = document.createElement('td');
+    const tdTime = document.createElement('td');
+
+    tdEmail.innerText = request.user.email;
+    tdUsername.innerText = request.user.username;
+    tdGroup.innerText = request.group.groupName;
+    tdStatus.innerText = request.status;
+    tdDate.innerText =  convertToDate(request.createdAt);
+    tdTime.innerText = convertToTime(request.createdAt);
+
+    tr.appendChild(tdEmail);
+    tr.appendChild(tdUsername);
+    tr.appendChild(tdGroup);
+    tr.appendChild(tdStatus);
+    tr.appendChild(tdDate);
+    tr.appendChild(tdTime);
+
+    receivedRequestsTableBody.appendChild(tr);
+}
+
+function addSentRequestHistoryInDOM(request){
+    const tr = document.createElement('tr');
+
+    const tdEmail = document.createElement('td');
+    const tdGroup = document.createElement('td');
+    const tdStatus = document.createElement('td');
+    const tdDate = document.createElement('td');
+    const tdTime = document.createElement('td');
+
+    tdEmail.innerText = request.email;
+    tdGroup.innerText = request.group.groupName;
+    tdStatus.innerText = request.status;
+    tdDate.innerText =  convertToDate(request.createdAt);
+    tdTime.innerText = convertToTime(request.createdAt);
+
+    tr.appendChild(tdEmail);
+    tr.appendChild(tdGroup);
+    tr.appendChild(tdStatus);
+    tr.appendChild(tdDate);
+    tr.appendChild(tdTime);
+
+    sentRequestsTableBody.appendChild(tr);
+}
+
+function getRequestHistory(){
+    axios.get(`${ORIGIN}/user/requestHistory`, { headers: {Authorization: token} })
+    .then((res) => {
+        const { receivedRequests, sentRequests} = res.data;
+        receivedRequestsTableBody.innerText = '';
+        if(receivedRequests){
+            receivedRequests.forEach((receivedRequest) => addReceivedRequestHistoryInDOM(receivedRequest));
+        }
+        sentRequestsTableBody.innerText = '';
+        if(sentRequests){
+            sentRequests.forEach((sentRequest) => addSentRequestHistoryInDOM(sentRequest));
+        }
     })
+    .catch((err) => {
+        let msg = "Could not fetch request history :(";
+        if(err.response && err.response.data && err.response.data.msg){
+            msg = err.response.data.msg;
+        }
+        showErrorInDOM(msg);
+    });
 }
 
 // Basic
+function convertToDate(dateTime){
+    const dateArr = (new Date(dateTime)).toDateString().split(' ');
+    return `${dateArr[2]}-${dateArr[1]}-${dateArr[3]}`; //DD-mon-YYYY
+}
+
+function convertToTime(dateTime, mode='HHMMSS'){
+    const timeArr = (new Date(dateTime)).toTimeString().split(' ');
+    if(mode === 'HHMM'){
+        const timeArr2 = timeArr[0].split(':');
+        return `${timeArr2[0]}:${timeArr2[1]}`; //HH:MM
+    }
+    return timeArr[0]; //HH:MM:SS
+}
+
 function logout(){
     if(confirm('Are you sure you want to logout ?')){
         localStorage.clear();
@@ -348,13 +488,21 @@ window.addEventListener('DOMContentLoaded', () => {
     createGroupBtn.addEventListener('click', () => createGroupContainer.style.display = 'block');
     closeCreateGroupFormBtn.addEventListener('click', () => createGroupContainer.style.display = 'none');
     createGroupSubmitBtn.addEventListener('click', createGroup);
+    // Group Members
+    showGroupMembersBtn.addEventListener('click', getGroupMembers);
+    closeGroupMembersBtn.addEventListener('click', () => groupMembersOuterContainer.style.display = 'none');
     // Requests
     receivedRequestsBtn.addEventListener('click', () => {
-        receivedRequestsOuterContainer.style.display = 'block';
         getPendingRequests();
+        receivedRequestsOuterContainer.style.display = 'block';
     });
     closeReceivedRequestsBtn.addEventListener('click', () => receivedRequestsOuterContainer.style.display = 'none');
     sendRequestBtn.addEventListener('click', () => sendRequestContainer.style.display = 'block');
     closeSendRequestFormBtn.addEventListener('click', () => sendRequestContainer.style.display = 'none');
     sendRequestSubmitBtn.addEventListener('click', sendRequest);
+    showRequestHistoryBtn.addEventListener('click', () => {
+        requestHistoryContainer.style.display = 'block';
+        getRequestHistory();
+    });
+    closeRequestHistoryBtn.addEventListener('click', () => requestHistoryContainer.style.display = 'none');
 });

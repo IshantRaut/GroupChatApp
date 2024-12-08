@@ -2,10 +2,7 @@ const path = require('path');
 const User = require('../models/user'); 
 const Group = require('../models/group');
 
-exports.getChatPage = (req, res) => {
-    res.sendFile(path.join(__dirname,'..','views','chat.html'));
 
-}
 exports.getUserGroups = async (req, res) => {
     try{
         const user = req.user;

@@ -48,38 +48,28 @@
     <div class="container bg-light my-1" id="groupsContainer"></div>
   </div>
 
-  <!-- Create Group/Send Request/Show Received Requests -->
+  <!-- Control Buttons -->
+  <!-- Show Group Members/Create Group/Send Request/Show Received Requests/Request History -->
   <div class="container bg-light my-1">
-    <button class="btn btn-sm btn-success" id="createGroupBtn">Create Group +</button>
-    <button class="btn btn-sm btn-success" id="sendRequestBtn">Send Request >></button>
-    <button class="btn btn-sm btn-success" id="receivedRequestsBtn">Show received requests</button>
+    <button class="btn btn-sm btn-success m-1" id="showGroupMembersBtn">Show Group Members</button>
+    <button class="btn btn-sm btn-success m-1" id="createGroupBtn">Create Group +</button>
+    <button class="btn btn-sm btn-success m-1" id="sendRequestBtn">Send Request >></button>
+    <button class="btn btn-sm btn-success m-1" id="receivedRequestsBtn">Show received requests</button>
+    <button class="btn btn-sm btn-success m-1" id="showRequestHistoryBtn">Request History</button>
   </div>
 
   <!-- Received Requests -->
   <div class="container bg-light" id="receivedRequestsOuterContainer" style="display: none;">
     <button id="closeReceivedRequestsBtn" class="btn btn-sm btn-outline-danger float-end">X</button>
-    <div class="row">
-      <div class="col-3"><hr></div>
-      <div class="text-center col-6">
-          <h4 class="text-success">Received Requests</h4>
-      </div>
-      <div class="col"><hr></div>
-    </div>
-    <div class="container bg-light" id="receivedRequestsContainer">
-    </div>
+    <h4 class="text-center text-success">Received Requests</h4>
+    <div class="container bg-light" id="receivedRequestsContainer"></div>
   </div>
 
   <!-- Send Request Form -->
   <div class="container col-lg-6 col-md-7 col-sm-8 col-11 bg-light my-2 py-2" id="sendRequestContainer"
   style="display: none;">
       <button id="closeSendRequestFormBtn" class="btn btn-sm btn-outline-danger float-end">X</button>
-      <div class="row">
-          <div class="col-3"><hr></div>
-          <div class="text-center col-6">
-              <h4 class="text-success">Send Request</h4>
-          </div>
-          <div class="col"><hr></div>
-      </div>
+      <h4 class="text-center text-success">Send Request</h4>
       <form id="groupForm">
           <label for="requestEmail" class="form-label">Receiver Email</label>
           <input type="email" name="requestEmail" id="requestEmail" class="form-control mb-1" placeholder="abc@xyz.com" required>
@@ -93,13 +83,7 @@
   <div class="container col-lg-6 col-md-7 col-sm-8 col-11 bg-light my-2 py-2" id="createGroupContainer"
   style="display: none;">
       <button id="closeCreateGroupFormBtn" class="btn btn-sm btn-outline-danger float-end">X</button>
-      <div class="row">
-          <div class="col-3"><hr></div>
-          <div class="text-center col-6">
-              <h4 class="text-success">Create Group</h4>
-          </div>
-          <div class="col"><hr></div>
-      </div>
+      <h4 class="text-center text-success">Create Group</h4>
       <form id="createGroupForm">
           <label for="groupName" class="form-label">Group Name</label>
           <input type="text" name="groupName" id="groupName" class="form-control mb-1" placeholder="Enter group name" required>
@@ -110,7 +94,7 @@
   </div>
 
   <!-- Chats/Send message -->
-  <div class="container bg-light col-md-8 col-lg-7 col-xl-6 my-1">
+  <div class="container bg-light col-md-8 col-lg-7 col-xl-6 my-1 pb-2">
     <h2 class="text-center text-success">Chats</h2>
     <div class="container bg-light py-1" id="chatList"></div>
     <hr>
@@ -125,8 +109,64 @@
 
   <!-- Group Members -->
   <div class="container bg-light" id="groupMembersOuterContainer" style="display: none;">
+    <button class="btn btn-sm btn-danger float-end" id="closeGroupMembersBtn">X</button>
     <h3 class="text-center text-success">Group Members</h3>
     <div class="container bg-light my-1" id="groupMembersContainer"></div>
+  </div>
+
+  <!-- Request History -->
+  <div class="container bg-light" id="requestHistoryContainer" style="display: none;">
+    <button class="btn btn-sm btn-danger float-end" id="closeRequestHistoryBtn">X</button>
+    <div class="d-flex flex-row flex-column flex-lg-row m-1">
+      <div class="p-2">
+        <h3 class="text-center text-success">Received Requests</h3>
+        <table class="table table-sm table-success table-striped">
+          <thead>
+            <tr>
+              <th scope="col">Email</th>
+              <th scope="col">Username</th>
+              <th scope="col">Group</th>
+              <th scope="col">Status</th>
+              <th scope="col">Date</th>
+              <th scope="col">Time</th>
+            </tr>
+          </thead>
+          <tbody id="receivedRequestsTableBody">
+            <!-- <tr>
+              <td>abc@xyz.com</td>
+              <td>abc</td>
+              <td>friends</td>
+              <td>accepted</td>
+              <td>2023-04-04</td>
+              <td>12:13:51</td>
+            </tr> -->
+          </tbody>
+        </table>
+      </div>
+      <div class="p-2">
+        <h3 class="text-center text-success">Sent Requests</h3>
+        <table class="table table-sm table-success table-striped">
+          <thead>
+            <tr>
+              <th scope="col">Email</th>
+              <th scope="col">Group</th>
+              <th scope="col">Status</th>
+              <th scope="col">Date</th>
+              <th scope="col">Time</th>
+            </tr>
+          </thead>
+          <tbody id="sentRequestsTableBody">
+            <!-- <tr>
+              <td>abc@xyz.com</td>
+              <td>friends</td>
+              <td>accepted</td>
+              <td>2023-04-04</td>
+              <td>12:13:51.000Z</td>
+            </tr> -->
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
 </body>
